@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Monitor;
-use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -20,7 +19,7 @@ class PingMonitorsJob implements ShouldQueue
             $intervalMinutes = $monitor->interval;
 
             // Allow a small grace period (e.g., 30 seconds) to account for slight delays in queue processing
-            if (!$lastChecked || now()->diffInSeconds($lastChecked) >= ($intervalMinutes * 60) - 30) {
+            if (! $lastChecked || now()->diffInSeconds($lastChecked) >= ($intervalMinutes * 60) - 30) {
                 PingMonitorJob::dispatch($monitor);
             }
         }

@@ -30,6 +30,11 @@ class MonitorController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Monitor/Create');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -79,7 +84,7 @@ class MonitorController extends Controller
             return [
                 'x' => $log->created_at->format('Y-m-d H:i:s'),
                 'y' => $log->response_time,
-                'status' => $log->status
+                'status' => $log->status,
             ];
         });
 
@@ -141,7 +146,7 @@ class MonitorController extends Controller
         }
 
         $monitor->update([
-            'is_active' => !$monitor->is_active,
+            'is_active' => ! $monitor->is_active,
         ]);
 
         return redirect()->back();

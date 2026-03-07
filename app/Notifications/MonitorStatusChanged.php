@@ -13,6 +13,7 @@ class MonitorStatusChanged extends Notification implements ShouldQueue
     use Queueable;
 
     public Monitor $monitor;
+
     public string $newStatus;
 
     public function __construct(Monitor $monitor, string $newStatus)
@@ -33,7 +34,7 @@ class MonitorStatusChanged extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject("Monitor Status Changed: {$this->monitor->url} is {$this->newStatus}")
-            ->greeting("Hello!")
+            ->greeting('Hello!')
             ->line($message)
             ->action('View Dashboard', url('/dashboard'))
             ->line('Thank you for using PingPing!');

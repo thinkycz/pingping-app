@@ -35,19 +35,6 @@ const upMonitors = computed(() => props.monitors.data.filter(m => m.is_active &&
 const downMonitors = computed(() => props.monitors.data.filter(m => m.is_active && m.status === 'Down').length);
 const pausedMonitors = computed(() => props.monitors.data.filter(m => !m.is_active).length);
 
-
-const form = useForm({
-    url: '',
-    alias: '',
-    interval: 5,
-});
-
-const submitMonitors = () => {
-    form.post(route('monitors.store'), {
-        onSuccess: () => form.reset(),
-    });
-};
-
 const handleSearch = () => {
     router.get(route('dashboard'), { search: search.value }, { preserveState: true, replace: true });
 };
@@ -67,13 +54,33 @@ const toggleMonitor = (monitor) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">Dashboard Overview</h2>
-                <div class="mt-4 flex md:ml-4 md:mt-0">
-                    <button type="button" @click="() => document.getElementById('add-monitor-form').scrollIntoView({ behavior: 'smooth' })" class="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h2 class="text-xl font-semibold leading-tight text-gray-900">Dashboard Overview</h2>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                    <!-- Search Bar -->
+                    <div class="relative w-full sm:w-80">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <MagnifyingGlassIcon class="h-4 w-4 text-gray-400" aria-hidden="true" />
+                        </div>
+                        <input 
+                            v-model="search"
+                            @keyup.enter="handleSearch"
+                            type="text" 
+                            class="block w-full rounded-md border-0 py-2 pl-9 pr-9 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition hover:ring-gray-400"
+                            placeholder="Search monitors..."
+                        />
+                        <div v-if="search" class="absolute inset-y-0 right-0 flex items-center pr-2">
+                            <button @click="clearSearch" class="text-gray-400 hover:text-gray-500 rounded-full p-1 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                <XMarkIcon class="h-4 w-4" aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <Link :href="route('monitors.create')" class="whitespace-nowrap inline-flex w-full justify-center sm:w-auto items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition">
                         <PlusIcon class="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
                         New Monitor
-                    </button>
+                    </Link>
                 </div>
             </div>
         </template>
@@ -83,73 +90,46 @@ const toggleMonitor = (monitor) => {
 
                 <!-- Stats Overview -->
                 <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="relative overflow-hidden rounded-xl bg-white px-4 pb-12 pt-5 shadow-sm ring-1 ring-gray-200 sm:px-6 sm:pt-6 hover:shadow-md transition">
-                        <dt>
-                            <div class="absolute rounded-md bg-indigo-50 p-3">
-                                <ChartBarIcon class="h-6 w-6 text-indigo-600" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Monitors</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{ totalMonitors }}</p>
-                        </dd>
+                    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow-sm ring-1 ring-gray-200 sm:p-6 hover:shadow-md transition flex items-center">
+                        <div class="rounded-md bg-indigo-50 p-3 mr-4">
+                            <ChartBarIcon class="h-6 w-6 text-indigo-600" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <dt class="truncate text-sm font-medium text-gray-500">Total Monitors</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ totalMonitors }}</dd>
+                        </div>
                     </div>
 
-                    <div class="relative overflow-hidden rounded-xl bg-white px-4 pb-12 pt-5 shadow-sm ring-1 ring-gray-200 sm:px-6 sm:pt-6 hover:shadow-md transition">
-                        <dt>
-                            <div class="absolute rounded-md bg-green-50 p-3">
-                                <ArrowUpCircleIcon class="h-6 w-6 text-green-600" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Page Up</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{ upMonitors }}</p>
-                        </dd>
+                    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow-sm ring-1 ring-gray-200 sm:p-6 hover:shadow-md transition flex items-center">
+                        <div class="rounded-md bg-green-50 p-3 mr-4">
+                            <ArrowUpCircleIcon class="h-6 w-6 text-green-600" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <dt class="truncate text-sm font-medium text-gray-500">Page Up</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ upMonitors }}</dd>
+                        </div>
                     </div>
 
-                    <div class="relative overflow-hidden rounded-xl bg-white px-4 pb-12 pt-5 shadow-sm ring-1 ring-gray-200 sm:px-6 sm:pt-6 hover:shadow-md transition">
-                        <dt>
-                            <div class="absolute rounded-md bg-red-50 p-3">
-                                <ArrowDownCircleIcon class="h-6 w-6 text-red-600" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Page Down</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{ downMonitors }}</p>
-                        </dd>
+                    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow-sm ring-1 ring-gray-200 sm:p-6 hover:shadow-md transition flex items-center">
+                        <div class="rounded-md bg-red-50 p-3 mr-4">
+                            <ArrowDownCircleIcon class="h-6 w-6 text-red-600" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <dt class="truncate text-sm font-medium text-gray-500">Page Down</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ downMonitors }}</dd>
+                        </div>
                     </div>
 
-                    <div class="relative overflow-hidden rounded-xl bg-white px-4 pb-12 pt-5 shadow-sm ring-1 ring-gray-200 sm:px-6 sm:pt-6 hover:shadow-md transition">
-                        <dt>
-                            <div class="absolute rounded-md bg-gray-50 p-3">
-                                <PauseIcon class="h-6 w-6 text-gray-600" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Page Paused</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{ pausedMonitors }}</p>
-                        </dd>
+                    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow-sm ring-1 ring-gray-200 sm:p-6 hover:shadow-md transition flex items-center">
+                        <div class="rounded-md bg-gray-50 p-3 mr-4">
+                            <PauseIcon class="h-6 w-6 text-gray-600" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <dt class="truncate text-sm font-medium text-gray-500">Page Paused</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ pausedMonitors }}</dd>
+                        </div>
                     </div>
                 </dl>
-                
-                <!-- Search Bar -->
-                <div class="relative max-w-xl">
-                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
-                    </div>
-                    <input 
-                        v-model="search"
-                        @keyup.enter="handleSearch"
-                        type="text" 
-                        class="block w-full rounded-full border-0 py-3 pl-10 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition hover:ring-gray-300"
-                        placeholder="Search monitors by alias or URL..."
-                    />
-                    <div v-if="search" class="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <button @click="clearSearch" class="text-gray-400 hover:text-gray-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <XMarkIcon class="h-5 w-5" aria-hidden="true" />
-                        </button>
-                    </div>
-                </div>
 
                 <!-- Monitors Table Card -->
                 <div class="bg-white shadow-sm ring-1 ring-gray-200 sm:rounded-xl overflow-hidden">
@@ -278,72 +258,6 @@ const toggleMonitor = (monitor) => {
                     </div>
                 </div>
 
-                <!-- Add Monitor Form -->
-                <div id="add-monitor-form" class="bg-white shadow-sm ring-1 ring-gray-200 sm:rounded-xl p-6 lg:p-8">
-                    <div class="md:flex md:items-center md:justify-between mb-6">
-                        <div class="min-w-0 flex-1">
-                            <h3 class="text-lg font-bold leading-7 text-gray-900 sm:truncate sm:text-xl sm:tracking-tight">Add New Monitor</h3>
-                            <p class="mt-1 text-sm text-gray-500">Create a new check to start monitoring uptime and response times instantly.</p>
-                        </div>
-                    </div>
-
-                    <form @submit.prevent="submitMonitors" class="mt-4">
-                        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6 items-end">
-                            <div class="sm:col-span-3">
-                                <label class="block text-sm font-medium leading-6 text-gray-900">Target URL</label>
-                                <div class="mt-2 rounded-md shadow-sm">
-                                    <input
-                                        v-model="form.url"
-                                        type="url"
-                                        required
-                                        placeholder="https://example.com"
-                                        class="block w-full rounded-md border-0 py-2.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="sm:col-span-2">
-                                <label class="block text-sm font-medium leading-6 text-gray-900">Friendly Name (Optional)</label>
-                                <div class="mt-2">
-                                    <input
-                                        v-model="form.alias"
-                                        type="text"
-                                        placeholder="My App Production"
-                                        class="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="sm:col-span-1">
-                                <label class="block text-sm font-medium leading-6 text-gray-900">Check Interval</label>
-                                <div class="mt-2">
-                                    <select
-                                        v-model="form.interval"
-                                        class="block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6 transition cursor-pointer"
-                                    >
-                                        <option :value="5">5 min</option>
-                                        <option :value="15">15 min</option>
-                                        <option :value="30">30 min</option>
-                                        <option :value="60">60 min</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 flex items-center justify-end gap-x-6 border-t border-gray-100 pt-6">
-                            <button
-                                type="submit"
-                                class="rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition flex items-center gap-x-2"
-                                :disabled="form.processing"
-                                :class="{'opacity-75 cursor-not-allowed': form.processing}"
-                            >
-                                <PlusIcon v-if="!form.processing" class="h-4 w-4" />
-                                <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                <span>Create Monitor</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
             </div>
         </div>
     </AuthenticatedLayout>

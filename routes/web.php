@@ -16,6 +16,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\MonitorController::class, 'index'])->name('dashboard');
+    Route::get('/monitors/create', [\App\Http\Controllers\MonitorController::class, 'create'])->name('monitors.create');
     Route::post('/monitors', [\App\Http\Controllers\MonitorController::class, 'store'])->name('monitors.store');
     Route::get('/monitors/{monitor}', [\App\Http\Controllers\MonitorController::class, 'show'])->name('monitors.show');
     Route::put('/monitors/{monitor}', [\App\Http\Controllers\MonitorController::class, 'update'])->name('monitors.update');
@@ -29,4 +30,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

@@ -25,7 +25,7 @@ defineProps({
 
     <div class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen selection:bg-indigo-500 selection:text-white overflow-x-hidden">
         <!-- Navigation -->
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <nav class="relative z-50 container mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <ApplicationLogo class="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
                 <span class="text-xl font-bold tracking-tight">UptimePro</span>

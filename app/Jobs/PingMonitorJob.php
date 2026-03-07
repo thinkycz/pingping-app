@@ -56,7 +56,7 @@ class PingMonitorJob implements ShouldQueue
                             'capture_peer_cert' => true,
                             'verify_peer' => false,
                             'verify_peer_name' => false,
-                        ]
+                        ],
                     ]);
                     $client = stream_socket_client(
                         "ssl://{$host}:443",
@@ -80,14 +80,14 @@ class PingMonitorJob implements ShouldQueue
                     }
                 } catch (\Exception $e) {
                     $sslStatus = 'Invalid';
-                    Log::error("SSL check failed for {$this->monitor->url}: " . $e->getMessage());
+                    Log::error("SSL check failed for {$this->monitor->url}: ".$e->getMessage());
                 }
             }
 
         } catch (\Exception $e) {
             $endTime = microtime(true);
             $responseTime = ($endTime - $startTime) * 1000;
-            Log::error("Ping failed for {$this->monitor->url}: " . $e->getMessage());
+            Log::error("Ping failed for {$this->monitor->url}: ".$e->getMessage());
         }
 
         PingLog::create([
