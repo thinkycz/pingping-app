@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Monitor;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -34,16 +35,94 @@ class MonitorController extends Controller
         $validated = $request->validate([
             'url' => 'required|url|max:255',
             'alias' => 'nullable|string|max:255',
+            'interval' => 'required|integer|in:5,15,30,60',
         ]);
 
         $request->user()->monitors()->create([
             'url' => $validated['url'],
             'alias' => $validated['alias'],
+            'interval' => $validated['interval'],
             'ssl_status' => 'None',
             'status' => 'Up',
             'uptime_percentage' => 100.00,
             'is_active' => true,
         ]);
+
+        return redirect()->route('dashboard');
+    }
+
+    public function show(Monitor $monitor, Request $request)
+    {
+        if ($monitor->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $thirtyDaysAgo = Carbon::now()->subDays(30);
+
+        $pingLogs = $monitor->pingLogs()
+            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $totalLogs30d = $pingLogs->count();
+        $upLogs30d = $pingLogs->where('status', 'Up')->count();
+        $uptime30d = $totalLogs30d > 0 ? round(($upLogs30d / $totalLogs30d) * 100, 2) : 100.00;
+
+        $chartData = $pingLogs->map(function ($log) {
+            return [
+                'x' => $log->created_at->format('Y-m-d H:i:s'),
+                'y' => $log->response_time,
+                'status' => $log->status
+            ];
+        });
+
+        $recentLogs = $monitor->pingLogs()
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'status' => $log->status,
+                    'response_time' => $log->response_time,
+                    'ssl_status' => $log->ssl_status,
+                    'created_at' => $log->created_at->diffForHumans(),
+                    'date' => $log->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+        return Inertia::render('Monitor/Show', [
+            'monitor' => $monitor,
+            'uptime30d' => $uptime30d,
+            'chartData' => $chartData,
+            'recentLogs' => $recentLogs,
+        ]);
+    }
+
+    public function update(Request $request, Monitor $monitor)
+    {
+        if ($monitor->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'url' => 'required|url|max:255',
+            'alias' => 'nullable|string|max:255',
+            'interval' => 'required|integer|in:5,15,30,60',
+        ]);
+
+        $monitor->update($validated);
+
+        return redirect()->back();
+    }
+
+    public function destroy(Monitor $monitor, Request $request)
+    {
+        if ($monitor->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $monitor->delete();
 
         return redirect()->route('dashboard');
     }
