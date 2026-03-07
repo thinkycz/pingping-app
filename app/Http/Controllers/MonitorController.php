@@ -20,7 +20,7 @@ class MonitorController extends Controller
                         ->orWhere('alias', 'like', "%{$search}%");
                 });
             })
-            ->latest('id')
+            ->orderBy('id', 'desc')
             ->paginate(10)
             ->withQueryString();
 
@@ -59,16 +59,23 @@ class MonitorController extends Controller
 
         $thirtyDaysAgo = Carbon::now()->subDays(30);
 
-        $pingLogs = $monitor->pingLogs()
+        $totalLogs30d = $monitor->pingLogs()
             ->where('created_at', '>=', $thirtyDaysAgo)
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->count();
 
-        $totalLogs30d = $pingLogs->count();
-        $upLogs30d = $pingLogs->where('status', 'Up')->count();
+        $upLogs30d = $monitor->pingLogs()
+            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->where('status', 'Up')
+            ->count();
+
         $uptime30d = $totalLogs30d > 0 ? round(($upLogs30d / $totalLogs30d) * 100, 2) : 100.00;
 
-        $chartData = $pingLogs->map(function ($log) {
+        $chartLogs = $monitor->pingLogs()
+            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->orderBy('created_at', 'asc')
+            ->get(['created_at', 'response_time', 'status']);
+
+        $chartData = $chartLogs->map(function ($log) {
             return [
                 'x' => $log->created_at->format('Y-m-d H:i:s'),
                 'y' => $log->response_time,
@@ -79,7 +86,7 @@ class MonitorController extends Controller
         $recentLogs = $monitor->pingLogs()
             ->orderBy('created_at', 'desc')
             ->limit(50)
-            ->get()
+            ->get(['id', 'status', 'response_time', 'ssl_status', 'created_at'])
             ->map(function ($log) {
                 return [
                     'id' => $log->id,
