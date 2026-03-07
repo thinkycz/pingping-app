@@ -12,28 +12,24 @@ const showingNavigationDropdown = ref(false);
 
 <template>
     <div>
-        <div class="min-h-screen bg-gray-100">
-            <nav
-                class="border-b border-gray-100 bg-white"
-            >
+        <div class="min-h-screen bg-gray-50">
+            <nav class="sticky top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-md shadow-sm">
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex h-16 justify-between">
-                        <div class="flex">
+                        <div class="flex items-center">
                             <!-- Logo -->
-                            <div class="flex shrink-0 items-center">
-                                <Link :href="route('dashboard')" class="flex items-center space-x-2">
+                            <div class="flex shrink-0 items-center mr-8">
+                                <Link :href="route('dashboard')" class="flex items-center space-x-3 group">
                                     <ApplicationLogo
-                                        class="block h-8 w-auto text-indigo-600"
+                                        class="block h-8 w-auto text-indigo-600 transition-transform group-hover:scale-105"
                                     />
-                                    <span class="text-xl font-bold tracking-tight text-gray-900">UptimePro</span>
+                                    <span class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-indigo-600">UptimePro</span>
                                 </Link>
                             </div>
 
                             <!-- Navigation Links -->
-                            <div
-                                class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
-                            >
+                            <div class="hidden space-x-6 sm:flex h-full items-center">
                                 <NavLink
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
@@ -43,20 +39,22 @@ const showingNavigationDropdown = ref(false);
                             </div>
                         </div>
 
-                        <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div class="hidden sm:flex sm:items-center">
                             <!-- Settings Dropdown -->
-                            <div class="relative ms-3">
+                            <div class="relative ml-3">
                                 <Dropdown align="right" width="48">
                                     <template #trigger>
-                                        <span class="inline-flex rounded-md">
+                                        <span class="inline-flex rounded-full">
                                             <button
                                                 type="button"
-                                                class="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 shadow-sm transition duration-150 ease-in-out hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                                                class="inline-flex items-center justify-center space-x-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium leading-5 text-gray-700 shadow-sm transition-all duration-150 ease-in-out hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                             >
-                                                {{ $page.props.auth.user.name }}
-
+                                                <span>{{ $page.props.auth.user.name }}</span>
+                                                <div class="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase shadow-inner">
+                                                    {{ $page.props.auth.user.name.charAt(0) }}
+                                                </div>
                                                 <svg
-                                                    class="-me-0.5 ms-2 h-4 w-4"
+                                                    class="-mr-1 ml-1 h-4 w-4 text-gray-400"
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     viewBox="0 0 20 20"
                                                     fill="currentColor"
@@ -182,10 +180,10 @@ const showingNavigationDropdown = ref(false);
 
             <!-- Page Heading -->
             <header
-                class="bg-white border-b border-gray-200"
+                class="bg-white border-b border-gray-200 shadow-sm"
                 v-if="$slots.header"
             >
-                <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>
             </header>
