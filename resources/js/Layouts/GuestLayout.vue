@@ -1,12 +1,16 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link } from '@inertiajs/vue3';
+import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 </script>
 
 <template>
     <div
         class="flex min-h-screen flex-col items-center bg-gray-50 pt-6 sm:justify-center sm:pt-0"
     >
+        <div class="absolute top-0 right-0 p-4">
+            <LanguageSwitcher />
+        </div>
         <div class="mb-8">
             <Link href="/" class="flex flex-col items-center space-y-4">
                 <ApplicationLogo class="h-16 w-16 text-indigo-600" />
