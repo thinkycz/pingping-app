@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { 
     MagnifyingGlassIcon, 
@@ -21,6 +21,7 @@ const search = ref(props.filters.search || '');
 const form = useForm({
     url: '',
     alias: '',
+    interval: 5,
 });
 
 const submitMonitors = () => {
@@ -48,7 +49,9 @@ const toggleMonitor = (monitor) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-bold text-gray-800">Monitoring</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-800">Monitoring Dashboard</h2>
+            </div>
         </template>
 
         <div class="py-10">
@@ -64,7 +67,7 @@ const toggleMonitor = (monitor) => {
                         @keyup.enter="handleSearch"
                         type="text" 
                         class="block w-full rounded-md border-0 py-3 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" 
-                        placeholder="Searching monitors by alias or URL..." 
+                        placeholder="Search monitors by alias or URL..."
                     />
                     <div v-if="search" class="absolute inset-y-0 right-0 flex items-center pr-3">
                         <button @click="clearSearch" class="text-gray-400 hover:text-gray-500">
@@ -80,10 +83,11 @@ const toggleMonitor = (monitor) => {
                             <thead>
                                 <tr>
                                     <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">Name</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Interval</th>
                                     <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">SSL/TLS</th>
                                     <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                     <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Uptime</th>
-                                    <th scope="col" class="px-3 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Response</th>
+                                    <th scope="col" class="px-3 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Response Time</th>
                                     <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Check</th>
                                     <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
                                         <span class="sr-only">Actions</span>
@@ -91,9 +95,14 @@ const toggleMonitor = (monitor) => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
-                                <tr v-for="monitor in monitors.data" :key="monitor.id" :class="{'opacity-50': !monitor.is_active}">
+                                <tr v-for="monitor in monitors.data" :key="monitor.id" :class="{'opacity-50': !monitor.is_active, 'hover:bg-gray-50': true}">
                                     <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                        {{ monitor.alias || monitor.url }}
+                                        <Link :href="route('monitors.show', monitor.id)" class="text-blue-600 hover:text-blue-900">
+                                            {{ monitor.alias || monitor.url }}
+                                        </Link>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-center text-gray-500">
+                                        {{ monitor.interval }}m
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
                                         <span 
@@ -111,12 +120,12 @@ const toggleMonitor = (monitor) => {
                                         <span 
                                             class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
                                             :class="{
-                                                'bg-gray-100 text-gray-800': monitor.status === 'disabled',
-                                                'bg-red-100 text-red-800': monitor.status === 'Down',
-                                                'bg-green-100 text-green-800': monitor.status === 'Up'
+                                                'bg-gray-100 text-gray-800': monitor.status === 'disabled' || !monitor.is_active,
+                                                'bg-red-100 text-red-800': monitor.status === 'Down' && monitor.is_active,
+                                                'bg-green-100 text-green-800': monitor.status === 'Up' && monitor.is_active
                                             }"
                                         >
-                                            {{ monitor.status }}
+                                            {{ !monitor.is_active ? 'Paused' : monitor.status }}
                                         </span>
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-center">
@@ -125,37 +134,32 @@ const toggleMonitor = (monitor) => {
                                             :class="{
                                                 'bg-green-100 text-green-800': monitor.uptime_percentage >= 99,
                                                 'bg-red-100 text-red-800': monitor.uptime_percentage < 99 && monitor.uptime_percentage >= 0,
-                                                'bg-gray-100 text-gray-800': monitor.status === 'disabled'
+                                                'bg-gray-100 text-gray-800': !monitor.is_active
                                             }"
                                         >
-                                            <span v-if="monitor.status !== 'disabled'">{{ monitor.uptime_percentage }}%</span>
-                                            <span v-else>100%</span>
+                                            <span>{{ monitor.uptime_percentage }}%</span>
                                         </span>
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 text-right">
-                                        {{ monitor.response_time }}s
+                                        {{ monitor.response_time !== null ? monitor.response_time + 'ms' : '-' }}
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 text-left">
-                                        <!-- Real app might use moment/dayjs, fake strings for now based on mockup -->
-                                        a few seconds ago
+                                        {{ monitor.last_checked_at ? new Date(monitor.last_checked_at).toLocaleString() : 'Never' }}
                                     </td>
                                     <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                         <div class="flex items-center justify-end space-x-3 text-gray-400">
-                                            <button @click="toggleMonitor(monitor)" class="hover:text-gray-600 focus:outline-none">
+                                            <button @click="toggleMonitor(monitor)" class="hover:text-gray-600 focus:outline-none" :title="monitor.is_active ? 'Pause' : 'Resume'">
                                                 <PlayIcon v-if="!monitor.is_active" class="h-5 w-5" />
                                                 <PauseIcon v-else class="h-5 w-5 stroke-2" />
                                             </button>
-                                            <button class="hover:text-gray-600 focus:outline-none">
+                                            <Link :href="route('monitors.show', monitor.id)" class="hover:text-gray-600 focus:outline-none" title="View Details">
                                                 <ChartBarIcon class="h-5 w-5" />
-                                            </button>
-                                            <button class="hover:text-gray-600 focus:outline-none">
-                                                <Cog8ToothIcon class="h-5 w-5" />
-                                            </button>
+                                            </Link>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr v-if="monitors.data.length === 0">
-                                    <td colspan="7" class="py-4 text-center text-sm text-gray-500">No monitors found.</td>
+                                    <td colspan="8" class="py-4 text-center text-sm text-gray-500">No monitors found.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -194,32 +198,49 @@ const toggleMonitor = (monitor) => {
                 </div>
 
                 <!-- Add Monitor Form -->
-                <form @submit.prevent="submitMonitors" class="flex gap-4 items-center">
-                    <div class="flex-1">
-                        <input 
-                            v-model="form.url"
-                            type="text" 
-                            required
-                            placeholder="https://example.com"
-                            class="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                        />
-                    </div>
-                    <div class="flex-1">
-                        <input 
-                            v-model="form.alias"
-                            type="text" 
-                            placeholder="My Website (optional)"
-                            class="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                        />
-                    </div>
-                    <button 
-                        type="submit" 
-                        class="rounded-md bg-[#3B82F6] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                        :disabled="form.processing"
-                    >
-                        Add monitor
-                    </button>
-                </form>
+                <div class="bg-white shadow-sm ring-1 ring-gray-200 sm:rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Monitor</h3>
+                    <form @submit.prevent="submitMonitors" class="flex flex-col sm:flex-row gap-4 items-end">
+                        <div class="flex-1 w-full">
+                            <label class="block text-sm font-medium leading-6 text-gray-900">URL</label>
+                            <input
+                                v-model="form.url"
+                                type="url"
+                                required
+                                placeholder="https://example.com"
+                                class="mt-2 block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                            />
+                        </div>
+                        <div class="flex-1 w-full">
+                            <label class="block text-sm font-medium leading-6 text-gray-900">Alias (Optional)</label>
+                            <input
+                                v-model="form.alias"
+                                type="text"
+                                placeholder="My Website"
+                                class="mt-2 block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                            />
+                        </div>
+                        <div class="w-full sm:w-32">
+                            <label class="block text-sm font-medium leading-6 text-gray-900">Interval</label>
+                            <select
+                                v-model="form.interval"
+                                class="mt-2 block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6"
+                            >
+                                <option :value="5">5 min</option>
+                                <option :value="15">15 min</option>
+                                <option :value="30">30 min</option>
+                                <option :value="60">60 min</option>
+                            </select>
+                        </div>
+                        <button
+                            type="submit"
+                            class="w-full sm:w-auto mt-4 sm:mt-0 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                            :disabled="form.processing"
+                        >
+                            Add Monitor
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

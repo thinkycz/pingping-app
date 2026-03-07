@@ -17,6 +17,9 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\MonitorController::class, 'index'])->name('dashboard');
     Route::post('/monitors', [\App\Http\Controllers\MonitorController::class, 'store'])->name('monitors.store');
+    Route::get('/monitors/{monitor}', [\App\Http\Controllers\MonitorController::class, 'show'])->name('monitors.show');
+    Route::put('/monitors/{monitor}', [\App\Http\Controllers\MonitorController::class, 'update'])->name('monitors.update');
+    Route::delete('/monitors/{monitor}', [\App\Http\Controllers\MonitorController::class, 'destroy'])->name('monitors.destroy');
     Route::patch('/monitors/{monitor}/toggle', [\App\Http\Controllers\MonitorController::class, 'toggle'])->name('monitors.toggle');
 });
 
