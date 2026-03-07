@@ -55,7 +55,7 @@ const toggleMonitor = (monitor) => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 class="text-xl font-semibold leading-tight text-gray-900">Dashboard Overview</h2>
+                <h2 class="text-xl font-semibold leading-tight text-gray-900">{{ $t('Dashboard Overview') }}</h2>
                 
                 <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                     <!-- Search Bar -->
@@ -95,7 +95,7 @@ const toggleMonitor = (monitor) => {
                             <ChartBarIcon class="h-6 w-6 text-indigo-600" aria-hidden="true" />
                         </div>
                         <div>
-                            <dt class="truncate text-sm font-medium text-gray-500">Total Monitors</dt>
+                            <dt class="truncate text-sm font-medium text-gray-500">{{ $t('Total Monitors') }}</dt>
                             <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ totalMonitors }}</dd>
                         </div>
                     </div>
@@ -105,7 +105,7 @@ const toggleMonitor = (monitor) => {
                             <ArrowUpCircleIcon class="h-6 w-6 text-green-600" aria-hidden="true" />
                         </div>
                         <div>
-                            <dt class="truncate text-sm font-medium text-gray-500">Page Up</dt>
+                            <dt class="truncate text-sm font-medium text-gray-500">{{ $t('Page Up') }}</dt>
                             <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ upMonitors }}</dd>
                         </div>
                     </div>
@@ -115,7 +115,7 @@ const toggleMonitor = (monitor) => {
                             <ArrowDownCircleIcon class="h-6 w-6 text-red-600" aria-hidden="true" />
                         </div>
                         <div>
-                            <dt class="truncate text-sm font-medium text-gray-500">Page Down</dt>
+                            <dt class="truncate text-sm font-medium text-gray-500">{{ $t('Page Down') }}</dt>
                             <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ downMonitors }}</dd>
                         </div>
                     </div>
@@ -125,7 +125,7 @@ const toggleMonitor = (monitor) => {
                             <PauseIcon class="h-6 w-6 text-gray-600" aria-hidden="true" />
                         </div>
                         <div>
-                            <dt class="truncate text-sm font-medium text-gray-500">Page Paused</dt>
+                            <dt class="truncate text-sm font-medium text-gray-500">{{ $t('Page Paused') }}</dt>
                             <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ pausedMonitors }}</dd>
                         </div>
                     </div>
@@ -137,15 +137,15 @@ const toggleMonitor = (monitor) => {
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
                                 <tr>
-                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">Name</th>
-                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Interval</th>
-                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">SSL/TLS</th>
-                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Uptime</th>
-                                    <th scope="col" class="px-3 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Response Time</th>
-                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Check</th>
+                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">{{ $t('Name') }}</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('Interval') }}</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('SSL/TLS') }}</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('Status') }}</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('Uptime') }}</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('Response Time') }}</th>
+                                    <th scope="col" class="px-3 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('Last Check') }}</th>
                                     <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                                        <span class="sr-only">Actions</span>
+                                        <span class="sr-only">{{ $t('Actions') }}</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -220,7 +220,7 @@ const toggleMonitor = (monitor) => {
                                     </td>
                                 </tr>
                                 <tr v-if="monitors.data.length === 0">
-                                    <td colspan="8" class="py-4 text-center text-sm text-gray-500">No monitors found.</td>
+                                    <td colspan="8" class="py-4 text-center text-sm text-gray-500">{{ $t('No monitors found.') }}</td>
                                 </tr>
                             </tbody>
                         </table>
