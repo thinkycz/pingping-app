@@ -20,12 +20,12 @@ class MonitorFactory extends Factory
             'user_id' => \App\Models\User::factory(),
             'url' => $this->faker->url(),
             'alias' => $this->faker->words(2, true),
-            'ssl_status' => $this->faker->randomElement(['None', 'Invalid', 'Valid', 'disabled']),
-            'status' => $this->faker->randomElement(['Up', 'Down', 'disabled']),
-            'uptime_percentage' => $this->faker->randomFloat(2, 80, 100),
-            'response_time' => $this->faker->randomFloat(4, 0.1, 1.5),
+            'ssl_status' => 'None',
+            'status' => 'Up',
+            'uptime_30d' => 100,
+            'response_time_ms' => $this->faker->numberBetween(80, 1500),
             'last_checked_at' => $this->faker->dateTimeBetween('-1 hour', 'now'),
-            'is_active' => $this->faker->boolean(80),
+            'is_active' => true,
         ];
     }
 }

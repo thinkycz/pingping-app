@@ -1,7 +1,7 @@
 <template>
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100" height="100" rx="20" fill="currentColor" fill-opacity="0.1" />
-        <path d="M15 50 L35 50 L45 25 L60 75 L70 50 L85 50" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-        <circle cx="85" cy="50" r="5" fill="currentColor" />
+    <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect width="40" height="40" rx="11" class="fill-primary-600" />
+        <path d="M7 21h7l3.5-8 5 16 3.5-8h7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="33" cy="21" r="1.8" fill="white" />
     </svg>
 </template>

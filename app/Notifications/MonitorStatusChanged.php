@@ -29,15 +29,20 @@ class MonitorStatusChanged extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $color = $this->newStatus === 'Up' ? 'success' : 'error';
-        $message = "Your monitor for {$this->monitor->url} is now {$this->newStatus}.";
+        $status = __('monitoring.status.'.strtolower($this->newStatus));
 
         return (new MailMessage)
-            ->subject("Monitor Status Changed: {$this->monitor->url} is {$this->newStatus}")
-            ->greeting('Hello!')
-            ->line($message)
-            ->action('View Dashboard', url('/dashboard'))
-            ->line('Thank you for using PingPing!');
+            ->subject(__('notifications.monitor_subject', ['url' => $this->monitor->url, 'status' => $status]))
+            ->greeting(__('notifications.greeting'))
+            ->line(__('notifications.monitor_line', ['url' => $this->monitor->url, 'status' => $status]))
+            ->when(
+                $this->newStatus === 'Down' && $this->monitor->failure_code,
+                fn (MailMessage $mail): MailMessage => $mail->line(
+                    __('monitoring.failures.'.$this->monitor->failure_code),
+                ),
+            )
+            ->action(__('notifications.view_monitor'), route('monitors.show', $this->monitor))
+            ->line(__('notifications.thanks'));
     }
 
     public function toArray(object $notifiable): array

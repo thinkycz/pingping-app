@@ -3,25 +3,33 @@
 namespace App\Jobs;
 
 use App\Models\Monitor;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
-class PingMonitorsJob implements ShouldQueue
+class PingMonitorsJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
+    public int $uniqueFor = 55;
+
+    public function uniqueId(): string
+    {
+        return 'ping-monitors';
+    }
+
     public function handle(): void
     {
-        $monitors = Monitor::where('is_active', true)->get();
+        Monitor::query()
+            ->where('is_active', true)
+            ->chunkById(250, function ($monitors): void {
+                foreach ($monitors as $monitor) {
+                    $dueAt = $monitor->last_checked_at?->addMinutes($monitor->interval);
 
-        foreach ($monitors as $monitor) {
-            $lastChecked = $monitor->last_checked_at;
-            $intervalMinutes = $monitor->interval;
-
-            // Allow a small grace period (e.g., 30 seconds) to account for slight delays in queue processing
-            if (! $lastChecked || now()->diffInSeconds($lastChecked) >= ($intervalMinutes * 60) - 30) {
-                PingMonitorJob::dispatch($monitor);
-            }
-        }
+                    if ($dueAt === null || $dueAt->lte(now())) {
+                        PingMonitorJob::dispatch($monitor->id);
+                    }
+                }
+            });
     }
 }

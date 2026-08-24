@@ -1,3 +1,55 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        color-scheme: light;
+        font-synthesis: none;
+    }
+
+    html {
+        @apply scroll-smooth bg-canvas text-ink;
+    }
+
+    body {
+        @apply min-h-screen bg-canvas text-ink antialiased;
+    }
+
+    button,
+    a,
+    input,
+    select {
+        @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+        scroll-margin-top: 5rem;
+    }
+
+    ::selection {
+        @apply bg-primary-100 text-primary-950;
+    }
+}
+
+@layer components {
+    .surface {
+        @apply rounded-2xl border border-line bg-white shadow-surface;
+    }
+
+    .page-shell {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .metric-number {
+        @apply font-semibold tabular-nums tracking-tight text-ink;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

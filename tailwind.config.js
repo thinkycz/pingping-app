@@ -12,8 +12,25 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                canvas: '#f6f8f7',
+                ink: '#122027',
+                muted: '#5f6f75',
+                line: '#dfe7e5',
+                primary: {
+                    50: '#eefbf8',
+                    100: '#d5f5ee',
+                    500: '#168d82',
+                    600: '#0f746c',
+                    700: '#105e59',
+                    950: '#083a37',
+                },
+            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+            },
+            boxShadow: {
+                surface: '0 1px 2px rgba(18, 32, 39, 0.04), 0 8px 24px rgba(18, 32, 39, 0.04)',
             },
         },
     },

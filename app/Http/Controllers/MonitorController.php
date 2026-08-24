@@ -2,153 +2,205 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MonitorRequest;
+use App\Jobs\PingMonitorJob;
 use App\Models\Monitor;
-use Carbon\Carbon;
+use App\Models\PingLog;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class MonitorController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
-        $search = $request->input('search');
+        $search = trim((string) $request->input('search', ''));
+        $status = in_array($request->input('status'), ['up', 'down', 'paused', 'pending'], true)
+            ? $request->input('status')
+            : 'all';
 
-        $monitors = Monitor::where('user_id', $request->user()->id)
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('url', 'like', "%{$search}%")
+        $accountMonitors = $request->user()->monitors();
+        $stats = [
+            'total' => (clone $accountMonitors)->count(),
+            'up' => (clone $accountMonitors)->where('is_active', true)->whereNotNull('last_checked_at')->where('status', 'Up')->count(),
+            'down' => (clone $accountMonitors)->where('is_active', true)->whereNotNull('last_checked_at')->where('status', 'Down')->count(),
+            'paused' => (clone $accountMonitors)->where('is_active', false)->count(),
+            'pending' => (clone $accountMonitors)->where('is_active', true)->whereNull('last_checked_at')->count(),
+        ];
+
+        $monitors = $request->user()->monitors()
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('url', 'like', "%{$search}%")
                         ->orWhere('alias', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('id', 'desc')
+            ->when($status !== 'all', fn (Builder $query) => $this->applyStatusFilter($query, $status))
+            ->latest('id')
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn (Monitor $monitor): array => $this->summary($monitor));
 
         return Inertia::render('Dashboard', [
             'monitors' => $monitors,
-            'filters' => ['search' => $search],
+            'stats' => $stats,
+            'filters' => ['search' => $search, 'status' => $status],
         ]);
     }
 
-    public function create()
+    public function create(): Response
     {
         return Inertia::render('Monitor/Create');
     }
 
-    public function store(Request $request)
+    public function store(MonitorRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'url' => 'required|url|max:255',
-            'alias' => 'nullable|string|max:255',
-            'interval' => 'required|integer|in:5,15,30,60',
-        ]);
-
-        $request->user()->monitors()->create([
-            'url' => $validated['url'],
-            'alias' => $validated['alias'],
-            'interval' => $validated['interval'],
+        $monitor = $request->user()->monitors()->create([
+            ...$request->validated(),
             'ssl_status' => 'None',
             'status' => 'Up',
-            'uptime_percentage' => 100.00,
+            'uptime_30d' => 100,
             'is_active' => true,
         ]);
 
-        return redirect()->route('dashboard');
+        PingMonitorJob::dispatch($monitor->id);
+
+        return redirect()
+            ->route('monitors.show', $monitor)
+            ->with('success', __('Monitor created. The first check is queued.'));
     }
 
-    public function show(Monitor $monitor, Request $request)
+    public function show(Monitor $monitor): Response
     {
-        if ($monitor->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('view', $monitor);
 
-        $thirtyDaysAgo = Carbon::now()->subDays(30);
+        $history = $monitor->pingLogs()
+            ->where('created_at', '>=', now()->subDays(30))
+            ->oldest('created_at')
+            ->get(['created_at', 'response_time_ms', 'status'])
+            ->map(fn (PingLog $log): array => [
+                'checked_at' => $log->created_at->toIso8601String(),
+                'response_time_ms' => $log->response_time_ms,
+                'status' => strtolower($log->status),
+            ]);
 
-        $totalLogs30d = $monitor->pingLogs()
-            ->where('created_at', '>=', $thirtyDaysAgo)
-            ->count();
-
-        $upLogs30d = $monitor->pingLogs()
-            ->where('created_at', '>=', $thirtyDaysAgo)
-            ->where('status', 'Up')
-            ->count();
-
-        $uptime30d = $totalLogs30d > 0 ? round(($upLogs30d / $totalLogs30d) * 100, 2) : 100.00;
-
-        $chartLogs = $monitor->pingLogs()
-            ->where('created_at', '>=', $thirtyDaysAgo)
-            ->orderBy('created_at', 'asc')
-            ->get(['created_at', 'response_time', 'status']);
-
-        $chartData = $chartLogs->map(function ($log) {
-            return [
-                'x' => $log->created_at->format('Y-m-d H:i:s'),
-                'y' => $log->response_time,
-                'status' => $log->status,
-            ];
-        });
-
-        $recentLogs = $monitor->pingLogs()
-            ->orderBy('created_at', 'desc')
+        $recentChecks = $monitor->pingLogs()
+            ->latest('created_at')
             ->limit(50)
-            ->get(['id', 'status', 'response_time', 'ssl_status', 'created_at'])
-            ->map(function ($log) {
-                return [
-                    'id' => $log->id,
-                    'status' => $log->status,
-                    'response_time' => $log->response_time,
-                    'ssl_status' => $log->ssl_status,
-                    'created_at' => $log->created_at->diffForHumans(),
-                    'date' => $log->created_at->format('Y-m-d H:i:s'),
-                ];
-            });
+            ->get()
+            ->map(fn (PingLog $log): array => [
+                'id' => $log->id,
+                'status' => strtolower($log->status),
+                'response_time_ms' => $log->response_time_ms,
+                'http_status' => $log->http_status,
+                'ssl_status' => strtolower($log->ssl_status),
+                'failure_code' => $log->failure_code,
+                'failure_message' => $this->failureMessage($log->failure_code, $log->failure_detail),
+                'checked_at' => $log->created_at->toIso8601String(),
+            ]);
 
         return Inertia::render('Monitor/Show', [
-            'monitor' => $monitor,
-            'uptime30d' => $uptime30d,
-            'chartData' => $chartData,
-            'recentLogs' => $recentLogs,
+            'monitor' => [
+                ...$this->summary($monitor),
+                'interval' => $monitor->interval,
+                'http_status' => $monitor->last_http_status,
+                'failure_code' => $monitor->failure_code,
+                'failure_message' => $this->failureMessage($monitor->failure_code, $monitor->failure_detail),
+                'ssl' => [
+                    'status' => strtolower($monitor->ssl_status),
+                    'expires_at' => $monitor->ssl_expiration_date?->toDateString(),
+                ],
+            ],
+            'history' => $history,
+            'recentChecks' => $recentChecks,
         ]);
     }
 
-    public function update(Request $request, Monitor $monitor)
+    public function update(MonitorRequest $request, Monitor $monitor): RedirectResponse
     {
-        if ($monitor->user_id !== $request->user()->id) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'url' => 'required|url|max:255',
-            'alias' => 'nullable|string|max:255',
-            'interval' => 'required|integer|in:5,15,30,60',
-        ]);
-
-        $monitor->update($validated);
-
-        return redirect()->back();
-    }
-
-    public function destroy(Monitor $monitor, Request $request)
-    {
-        if ($monitor->user_id !== $request->user()->id) {
-            abort(403);
-        }
-
-        $monitor->delete();
-
-        return redirect()->route('dashboard');
-    }
-
-    public function toggle(Monitor $monitor, Request $request)
-    {
-        if ($monitor->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('update', $monitor);
+        $validated = $request->validated();
+        $targetChanged = $validated['url'] !== $monitor->url;
 
         $monitor->update([
-            'is_active' => ! $monitor->is_active,
+            ...$validated,
+            ...($targetChanged ? [
+                'status' => 'Up',
+                'uptime_30d' => 100,
+                'response_time_ms' => null,
+                'last_http_status' => null,
+                'failure_code' => null,
+                'failure_detail' => null,
+                'last_checked_at' => null,
+                'ssl_status' => 'None',
+                'ssl_expiration_date' => null,
+            ] : []),
         ]);
 
-        return redirect()->back();
+        if ($targetChanged && $monitor->is_active) {
+            PingMonitorJob::dispatch($monitor->id);
+        }
+
+        return redirect()->back()->with('success', __('Monitor settings saved.'));
+    }
+
+    public function destroy(Monitor $monitor): RedirectResponse
+    {
+        $this->authorize('delete', $monitor);
+        $monitor->delete();
+
+        return redirect()->route('dashboard')->with('success', __('Monitor deleted.'));
+    }
+
+    public function toggle(Monitor $monitor): RedirectResponse
+    {
+        $this->authorize('update', $monitor);
+        $monitor->update(['is_active' => ! $monitor->is_active]);
+
+        if ($monitor->is_active) {
+            PingMonitorJob::dispatch($monitor->id);
+        }
+
+        $message = $monitor->is_active ? __('Monitor resumed.') : __('Monitor paused.');
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    private function applyStatusFilter(Builder $query, string $status): Builder
+    {
+        return match ($status) {
+            'paused' => $query->where('is_active', false),
+            'pending' => $query->where('is_active', true)->whereNull('last_checked_at'),
+            'up' => $query->where('is_active', true)->whereNotNull('last_checked_at')->where('status', 'Up'),
+            'down' => $query->where('is_active', true)->whereNotNull('last_checked_at')->where('status', 'Down'),
+        };
+    }
+
+    private function summary(Monitor $monitor): array
+    {
+        return [
+            'id' => $monitor->id,
+            'url' => $monitor->url,
+            'alias' => $monitor->alias,
+            'display_state' => $monitor->displayState(),
+            'uptime_30d' => (float) $monitor->uptime_30d,
+            'response_time_ms' => $monitor->response_time_ms,
+            'last_checked_at' => $monitor->last_checked_at?->toIso8601String(),
+            'is_active' => $monitor->is_active,
+        ];
+    }
+
+    private function failureMessage(?string $code, ?string $detail): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+
+        $key = "monitoring.failures.{$code}";
+        $translated = __($key);
+
+        return $translated === $key ? $detail : $translated;
     }
 }

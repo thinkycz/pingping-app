@@ -1,61 +1,11 @@
 <script setup>
-import { computed } from 'vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-
-const props = defineProps({
-    status: {
-        type: String,
-    },
-});
-
+import { computed } from 'vue';
+const props = defineProps({ status: String });
 const form = useForm({});
-
-const submit = () => {
-    form.post(route('verification.send'));
-};
-
-const verificationLinkSent = computed(
-    () => props.status === 'verification-link-sent',
-);
+const sent = computed(() => props.status === 'verification-link-sent');
 </script>
 
-<template>
-    <GuestLayout>
-        <Head title="Email Verification" />
-
-        <div class="mb-4 text-sm text-gray-600">
-            Thanks for signing up! Before getting started, could you verify your
-            email address by clicking on the link we just emailed to you? If you
-            didn't receive the email, we will gladly send you another.
-        </div>
-
-        <div
-            class="mb-4 text-sm font-medium text-green-600"
-            v-if="verificationLinkSent"
-        >
-            A new verification link has been sent to the email address you
-            provided during registration.
-        </div>
-
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Resend Verification Email
-                </PrimaryButton>
-
-                <Link
-                    :href="route('logout')"
-                    method="post"
-                    as="button"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Log Out</Link
-                >
-            </div>
-        </form>
-    </GuestLayout>
-</template>
+<template><GuestLayout><Head :title="$t('Verify email')" /><h1 class="text-2xl font-bold tracking-tight text-ink">{{ $t('Check your inbox') }}</h1><p class="mt-2 text-sm leading-6 text-muted">{{ $t('Open the verification link we sent before accessing your monitors. If it is missing, request another email below.') }}</p><p v-if="sent" role="status" class="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">{{ $t('A new verification link has been sent.') }}</p><form class="mt-6" @submit.prevent="form.post(route('verification.send'))"><PrimaryButton class="w-full" :disabled="form.processing">{{ form.processing ? $t('Sending…') : $t('Resend verification email') }}</PrimaryButton></form><Link :href="route('logout')" method="post" as="button" class="mt-5 w-full rounded-lg py-2 text-center text-sm font-semibold text-muted hover:text-ink">{{ $t('Log out') }}</Link></GuestLayout></template>

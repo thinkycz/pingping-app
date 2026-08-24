@@ -1,27 +1,22 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link } from '@inertiajs/vue3';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
+import { Link } from '@inertiajs/vue3';
 </script>
 
 <template>
-    <div
-        class="flex min-h-screen flex-col items-center bg-gray-50 pt-6 sm:justify-center sm:pt-0"
-    >
-        <div class="absolute top-0 right-0 p-4">
-            <LanguageSwitcher />
-        </div>
-        <div class="mb-8">
-            <Link href="/" class="flex flex-col items-center space-y-4">
-                <ApplicationLogo class="h-16 w-16 text-indigo-600" />
-                <span class="text-2xl font-bold tracking-tight text-gray-900">UptimePro</span>
+    <div class="min-h-screen bg-canvas">
+        <header class="page-shell flex h-20 items-center justify-between">
+            <Link href="/" class="flex items-center gap-2 rounded-lg">
+                <ApplicationLogo class="h-9 w-9" />
+                <span class="text-lg font-bold tracking-tight text-ink">PingPing</span>
             </Link>
-        </div>
-
-        <div
-            class="mt-2 w-full overflow-hidden bg-white px-8 py-10 shadow-xl shadow-gray-200/50 sm:max-w-md sm:rounded-2xl border border-gray-100"
-        >
-            <slot />
-        </div>
+            <LanguageSwitcher />
+        </header>
+        <main class="page-shell flex min-h-[calc(100vh-8rem)] items-start justify-center pb-12 pt-6 sm:items-center sm:pt-0">
+            <div class="surface w-full max-w-md p-6 sm:p-8">
+                <slot />
+            </div>
+        </main>
     </div>
 </template>

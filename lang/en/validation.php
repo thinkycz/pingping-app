@@ -2,6 +2,8 @@
 
 return [
 
+    'public_monitor_url' => 'Enter a public HTTP or HTTPS URL on port 80 or 443. Local, private, reserved, and unresolved targets are not allowed.',
+
     /*
     |--------------------------------------------------------------------------
     | Validation Language Lines
@@ -195,6 +197,12 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        'alias' => 'friendly name',
+        'current_password' => 'current password',
+        'email' => 'email address',
+        'password_confirmation' => 'password confirmation',
+        'url' => 'website URL',
+    ],
 
 ];

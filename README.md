@@ -1,59 +1,94 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PingPing
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+PingPing is a bilingual uptime monitor for site owners and small teams. It checks public HTTP/HTTPS websites on a schedule, records a rolling 30-day uptime and response-time history, verifies TLS, and emails the owner on an initial failure or later status change.
 
-## About Laravel
+The supported product is intentionally focused: public targets on ports 80 and 443, 5/15/30/60-minute intervals, one monitoring location, and email alerts. Private-network monitoring, one-minute checks, SMS, Slack, and webhooks are not implemented.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack and requirements
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.2+ with cURL, OpenSSL, PDO, and the extensions required by Laravel
+- Composer 2
+- Node.js 20+ and npm
+- Laravel 12, Inertia 2, Vue 3, Vite 7, Tailwind CSS 3
+- A supported SQL database, cache with atomic locks, queue backend, scheduler, and mail transport in production
+- Chrome/Chromium for Laravel Dusk
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Local setup
 
-## Learning Laravel
+```bash
+cp .env.example .env
+composer install
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate --seed
+npm install
+npm run build
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Start the complete development stack:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+composer run dev
+```
 
-## Laravel Sponsors
+That command starts the web server, Vite, a queue listener, and application logs. To run services separately:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+php artisan serve
+npm run dev
+php artisan queue:work --tries=2 --timeout=30
+php artisan schedule:work
+```
 
-### Premium Partners
+Mail uses the configured Laravel mailer. The default local configuration writes mail to the log; configure SMTP or another production transport before enabling alerts.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Tests and quality gates
 
-## Contributing
+```bash
+composer test
+vendor/bin/pint --test
+npm run build
+composer audit --locked
+npm audit
+php artisan schedule:list
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Dusk uses the isolated `database/dusk.sqlite` file configured in `.env.dusk`:
 
-## Code of Conduct
+```bash
+php artisan dusk:chrome-driver --detect
+php artisan serve --host=127.0.0.1 --port=8000
+php artisan dusk --without-tty
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The browser journeys cover landing/authentication, verification, language switching, dashboard search/filter/pagination, monitor validation and CRUD, account updates, password changes, account deletion, and axe-core serious/critical accessibility checks.
 
-## Security Vulnerabilities
+## Production operation
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Point the web server document root at `public/`, configure HTTPS, and set production database, cache, queue, mail, and trusted proxy values in the environment. Deploy in this order:
 
-## License
+```bash
+composer install --no-dev --optimize-autoloader
+npm ci
+npm run build
+php artisan migrate --force
+php artisan optimize
+php artisan queue:restart
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Run one scheduler process and one or more queue workers under a process supervisor:
+
+```bash
+php artisan schedule:run
+php artisan queue:work --tries=2 --timeout=30 --max-time=3600
+```
+
+The scheduler command must run every minute (normally from cron). Queue workers must be restarted after each deployment. Keep `APP_URL`, `APP_NAME=PingPing`, `APP_LOCALE`, `MAIL_FROM_ADDRESS`, and `MAIL_FROM_NAME` accurate so signed links and notification branding are correct.
+
+Before the monitoring schema migration, back up the database and stop old scheduler/queue processes. Historical ping logs are preserved; PingPing does not automatically delete them.
+
+## Monitoring safety model
+
+Every submitted URL and redirect hop is resolved again at check time. PingPing rejects credentials, unsupported schemes/ports, localhost, unresolved hosts, and private/reserved/link-local IPv4 or IPv6 addresses. It pins an approved public DNS address, disables automatic redirects, caps redirects at five, uses short connection/request timeouts, retries one network/timeout/server failure, and verifies TLS trust and hostname.
+
+See [`docs/specs/2026-08-24-pingping-audit-redesign.md`](docs/specs/2026-08-24-pingping-audit-redesign.md) for the product contract and [`docs/verification/2026-08-24-pingping-verification.md`](docs/verification/2026-08-24-pingping-verification.md) for current release evidence.

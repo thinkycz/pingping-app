@@ -12,12 +12,16 @@ class PingLog extends Model
     protected $fillable = [
         'monitor_id',
         'status',
-        'response_time',
+        'response_time_ms',
+        'http_status',
+        'failure_code',
+        'failure_detail',
         'ssl_status',
     ];
 
     protected $casts = [
-        'response_time' => 'decimal:4',
+        'response_time_ms' => 'integer',
+        'http_status' => 'integer',
     ];
 
     public function monitor()

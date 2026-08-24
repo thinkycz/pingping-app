@@ -3,4 +3,7 @@
 use App\Jobs\PingMonitorsJob;
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::job(new PingMonitorsJob)->everyMinute();
+Schedule::job(new PingMonitorsJob)
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
